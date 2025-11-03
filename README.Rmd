@@ -17,6 +17,27 @@ knitr::opts_chunk$set(
 
 
 
+<!-- TOC start (generated with https://github.com/derlin/bitdowntoc) -->
+
+- [WhenDidThatHappen](#whendidthathappen)
+   * [Installation](#installation)
+- [Basic usage](#basic-usage)
+   * [Built-in datasets](#built-in-datasets)
+   * [Simple outcomes (e.g. `survival::survfit()`, `survival::coxph()`, `coxme::coxme()`)](#simple-outcomes-eg-survivalsurvfit-survivalcoxph-coxmecoxme)
+   * [Composite outcomes (e.g. `survival::survfit()`, `survival::coxph()`, `coxme::coxme()`)](#composite-outcomes-eg-survivalsurvfit-survivalcoxph-coxmecoxme)
+   * [Competing risks, simple and composite (e.g. `cmprsk::crr()`)](#competing-risks-simple-and-composite-eg-cmprskcrr)
+- [Advanced usage](#advanced-usage)
+   * [Units of time (the `time_units` argument)](#units-of-time-the-time_units-argument)
+   * [Blanking periods (the `blanking` argument)](#blanking-periods-the-blanking-argument)
+   * [Minimum observation time (the `minimum_time` argument)](#minimum-observation-time-the-minimum_time-argument)
+   * [The `debug` argument](#the-debug-argument)
+- [Implementation details](#implementation-details)
+   * [Dataframe shapes for input](#dataframe-shapes-for-input)
+   * [Early and late censoring](#early-and-late-censoring)
+   * [Tie-breaking](#tie-breaking)
+
+<!-- TOC end -->
+
 # WhenDidThatHappen
 
 <!-- badges: start -->
