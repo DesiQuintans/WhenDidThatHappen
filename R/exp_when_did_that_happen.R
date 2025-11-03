@@ -6,25 +6,7 @@
 #' earliest outcome date, and what that outcome was. It produces output that is
 #' ready for survival analyses with typical R packages.
 #'
-#' # Details
-#'
-#' ## Terminology
-#'
-#' - **Subject** is the subject of study. This might be unique patients, unique
-#'   machines in a factory, etc.
-#' - **Start date** or **index date** is when observations began for a subject.
-#'   Each subject usually has a different start date.
-#' - **Event date** is when an event of interest happens. For example, the
-#'   soonest date when a person gets a heart attack after receiving a pacemaker.
-#' - **Blanking period** is a period after the start date during which we ignore
-#'   any events of interest that occur, but still allow for censoring.
-#' - **Censor date** is when observations end for a subject. Many events can
-#'   censor a subject, including the end of the study, or the last contact we
-#'   had with the person, or the date they withdrew consent, or the date when
-#'   they died.
-#' - **Follow-up period** is how long everyone had for observation, i.e. the
-#'   time between their start date and their censor date, even if they had the
-#'   event.
+#' @details
 #'
 #' ## Dataframe shapes for input
 #'
@@ -39,69 +21,6 @@
 #'   event (i.e. `date_of_heart_attack`). See
 #'   - See the included dataset `example_events_multirow` for an example.
 #'
-#' ## Early and late censoring
-#'
-#' To support multi-row datasets, this function handles censor dates in two
-#' different ways.
-#'
-#' - **Early censors** are events that censor a subject as soon as they happen
-#'   because no new information can be collected about them, like when they die.
-#'   - In a multi-row dataset, the minimum of these dates is used for each subject.
-#' - **Late censors** are events that censor a subject when they **stop** happening,
-#'   such as when they stop coming to follow-up meetings.
-#'   - In a multi-row dataset, the maximum of these dates is used for each subject.
-#'
-#' In a one-row-per-person dataset, this package assumes that you have
-#' pre-processed the censor columns appropriately. In this case, it doesn't
-#' matter where you put the dates in the `early_censors` or `late_censors`
-#' arguments.
-#'
-#'
-#' ## Tie-breaking
-#'
-#' Ties are common if you only have dates of events, but not the time they occur;
-#' a person can have a heart attack, receive surgery for it, and pass away all
-#' in one calendar day.
-#'
-#' This function breaks ties by first sorting the dates chronologically **and then**
-#' sorting by the columns you provided in `event_times`, `early_censors`, and
-#' `late_censors`, in the order that you supplied them. This means that if an
-#' event and a censor occur at the same time, then the person will be flagged
-#' with the event. For a call like this, for example:
-#'
-#' ```r
-#' when_did_that_happen(
-#'   [...]
-#'   event_times  = list(
-#'     "Cardiac Intervention" = c("ablation_date", "cied_date"),
-#'     "CVD Death"            = c("death_date_cvd")
-#'   ),
-#'   early_censors = c("death_date_noncvd"),
-#'   late_censors  = c("followup_date", "end_of_study")
-#'   [...]
-#' )
-#' ```
-#'
-#' Then the sorting method is:
-#'
-#' 1. Sort all dates chronologically, then
-#' 2. Sub-sort by events (`ablation_date`, then `cied_date`, then `death_date_cvd`),
-#' 3. Then sub-sort by early censors (`death_date_noncvd`),
-#' 4. Finally, sub-sort by late censors (`followup_date` and finally `end_of_study`).
-#'
-#' ## Blanking
-#'
-#' In some analyses, a blanking period can be used to ignore events that occur
-#' too early. A common example in the literature is ignoring early atrial
-#' fibrillation recurrence after surgery, as minor recurrences within 8 weeks or
-#' so are currently believed to be transitory and not clinically significant.
-#' This function implements blanking periods as something that ignores *events*,
-#' but does not ignore *censoring*; if your blanking period is 3 months, and a
-#' subject gets an event in 1 month and then dies at 2 months, the event will be
-#' ignored but the person will receive an outcome of Censored and a
-#' time-to-event of 2 months.
-#'
-#'
 #' @param data (Dataframe) A dataframe.
 #' @param identifier (Character) The name of one column in `data` that identifies subjects (e.g. patient number or machine serial number).
 #' @param description (Character) A human-readable name for your analysis, which is used give labels to the output variables. A suffix for the final variable names will be generated from this.
@@ -110,8 +29,8 @@
 #' @param early_censors (Character) The names of one or more Date/Datetime columns in `data` that are used to censor a subject as soon as they occur because no more information can be collected about them, such as death or study withdrawal. At least one censor date must be given in either this argument or in `late_censors`. If this argument is not needed, leave it as `NULL`.
 #' @param late_censors (Character) The names of one or more Date/Datetime columns in `data` that are used to censor a subject when they stop occurring, such as censoring someone at their last known date of clinical contact. At least one censor date must be given in either this argument or in `early_censors`. If this argument is not needed, leave it as `NULL`.
 #' @param time_units (Period) A `lubridate` Period object that describes the units of time for each time-to-event. By default, times are reported in elapsed decimal days. You may be interested in [lubridate::hours()], [lubridate::days()], [lubridate::weeks()], or [lubridate::years()]. Note that there is no function for months because the number of days in a month varies; use weeks instead.
-#' @param blanking (Period) `NULL` (default), or a `lubridate` Period object (like the `time_units` argument) that describes how long to wait *after* the `start_time` before observing events. See 'Details'.
-#' @param minimum_time (Period) A `lubridate` Period object that describes the minimum follow-up time required for a subject to be eligible for this analysis (they will be `NA` if ineligible). The default setting (`lubridate::days(0)`) means no requirement; a person can be started and censored at exactly the same time. See 'Details'.
+#' @param blanking (Period) A `lubridate` Period object (like the `time_units` argument) that describes how long to wait *after* the `start_time` before observing events.
+#' @param minimum_time (Period) A `lubridate` Period object that describes the minimum follow-up time required for a subject to be eligible for this analysis (they will be `NA` if ineligible).
 #' @param debug (Logical) If `FALSE` (default), returns calculated results. If `TRUE`, returns diagnostic results. See 'Value'.
 #'
 #' @returns
@@ -140,8 +59,8 @@
 #'   event_times   = list(
 #'     "Ablation"  = c("ablation_date")
 #'   ),
-#'   early_censors = c("death_date"),
-#'   late_censors  = c("followup_date", "end_of_study")
+#'   early_censors = c("death_date", "end_of_study"),
+#'   late_censors  = c("followup_date")
 #' )
 #'
 #'
@@ -156,8 +75,8 @@
 #'   event_times   = list(
 #'     "Cardiac Intervention" = c("ablation_date", "cied_date")
 #'   ),
-#'   early_censors = c("death_date"),
-#'   late_censors  = c("followup_date", "end_of_study"),
+#'   early_censors = c("death_date", "end_of_study"),
+#'   late_censors  = c("followup_date"),
 #'   time_units    = lubridate::weeks(4),
 #'   blanking      = lubridate::weeks(8)
 #' )
@@ -175,8 +94,8 @@
 #'     "Ablation" = c("ablation_date"),
 #'     "Death"    = c("death_date")
 #'   ),
-#'   early_censors = NULL,
-#'   late_censors  = c("followup_date", "end_of_study")
+#'   early_censors = c("end_of_study"),
+#'   late_censors  = c("followup_date")
 #' )
 #'
 #'
@@ -193,14 +112,14 @@
 #'     "Cardiac Intervention" = c("ablation_date", "cied_date"),
 #'     "Death"                = c("death_date")
 #'   ),
-#'   early_censors = NULL,
-#'   late_censors  = c("followup_date", "end_of_study"),
+#'   early_censors = c("end_of_study"),
+#'   late_censors  = c("followup_date"),
 #'   time_units    = lubridate::days(1),
 #'   blanking      = lubridate::weeks(4),
 #'   minimum_time  = lubridate::weeks(24)
 #' )
 #'
-when_did_that_happen <- function(data, identifier, description, start_time, event_times, early_censors, late_censors = NULL, time_units = lubridate::days(1), blanking = NULL, minimum_time = lubridate::days(0), debug = FALSE) {
+when_did_that_happen <- function(data, identifier, description, start_time, event_times, early_censors = NULL, late_censors = NULL, time_units = lubridate::days(1), blanking = lubridate::days(0), minimum_time = lubridate::days(0), debug = FALSE) {
 
   # `data` needs to be coerced into a base data.frame, or else I get errors
   # in `aggregate()` if `data` is actually a data.table.
@@ -486,13 +405,9 @@ when_did_that_happen <- function(data, identifier, description, start_time, even
     )
 
   names(base_info) <- c(identifier, start_time)
-  rownames(base_info) <- NULL
+  base_info[[".blankdate"]] <- base_info[[start_time]] + blanking
 
-  if (is.null(blanking) == FALSE) {
-    base_info[[".blankdate"]] <- base_info[[start_time]] + blanking
-  } else {
-    base_info[[".blankdate"]] <- base_info[[start_time]]
-  }
+  rownames(base_info) <- NULL
 
 
   ## Check for missing start dates ------------------------------
@@ -688,10 +603,10 @@ when_did_that_happen <- function(data, identifier, description, start_time, even
       no.dups = FALSE
     )
 
-  attr(result[[.timeto_colname]],      "label") <- paste("Time to ",    description)
-  attr(result[[.outcome_fct_colname]], "label") <- paste("Outcome of ", description)
-  attr(result[[.outcome_int_colname]], "label") <- paste("Outcome of ", description)
-  attr(result[[.obstime_colname]],     "label") <- paste("Observation time of ", description)
+  attr(result[[.timeto_colname]],      "label") <- paste("Time to",    description)
+  attr(result[[.outcome_fct_colname]], "label") <- paste("Outcome of", description)
+  attr(result[[.outcome_int_colname]], "label") <- paste("Outcome of", description)
+  attr(result[[.obstime_colname]],     "label") <- paste("Total observation time for", description, "outcome")
 
   if (debug == TRUE) {
     return(

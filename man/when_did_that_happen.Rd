@@ -10,10 +10,11 @@ when_did_that_happen(
   description,
   start_time,
   event_times,
-  early_censors,
+  early_censors = NULL,
   late_censors = NULL,
   time_units = lubridate::days(1),
-  blanking = NULL,
+  blanking = lubridate::days(0),
+  minimum_time = lubridate::days(0),
   debug = FALSE
 )
 }
@@ -34,7 +35,9 @@ when_did_that_happen(
 
 \item{time_units}{(Period) A \code{lubridate} Period object that describes the units of time for each time-to-event. By default, times are reported in elapsed decimal days. You may be interested in \code{\link[lubridate:period]{lubridate::hours()}}, \code{\link[lubridate:period]{lubridate::days()}}, \code{\link[lubridate:period]{lubridate::weeks()}}, or \code{\link[lubridate:period]{lubridate::years()}}. Note that there is no function for months because the number of days in a month varies; use weeks instead.}
 
-\item{blanking}{(Period) \code{NULL} (default), or a \code{lubridate} Period object (like the \code{time_units} argument) that describes how long to wait \emph{after} the \code{start_time} before observing events. See 'Details'.}
+\item{blanking}{(Period) A \code{lubridate} Period object (like the \code{time_units} argument) that describes how long to wait \emph{after} the \code{start_time} before observing events.}
+
+\item{minimum_time}{(Period) A \code{lubridate} Period object that describes the minimum follow-up time required for a subject to be eligible for this analysis (they will be \code{NA} if ineligible).}
 
 \item{debug}{(Logical) If \code{FALSE} (default), returns calculated results. If \code{TRUE}, returns diagnostic results. See 'Value'.}
 }
@@ -54,24 +57,7 @@ This function calculates the time that elapsed between a start date and the
 earliest outcome date, and what that outcome was. It produces output that is
 ready for survival analyses with typical R packages.
 }
-\section{Details}{
-\subsection{Terminology}{
-\itemize{
-\item \strong{Subject} is the subject of study. This might be unique patients, unique
-machines in a factory, etc.
-\item \strong{Start date} or \strong{index date} is when observations began for a subject.
-Each subject usually has a different start date.
-\item \strong{Event date} is when an event of interest happens. For example, the
-soonest date when a person gets a heart attack after receiving a pacemaker.
-\item \strong{Censor date} is when observations end for a subject. Many events can
-censor a subject, including the end of the study, or the last contact we
-had with the person, or the date they withdrew consent, or the date when
-they died.
-\item \strong{Blanking period} is a period after the start date during which we ignore
-any events of interest that occur, but still allow for censoring.
-}
-}
-
+\details{
 \subsection{Dataframe shapes for input}{
 
 This function requires data in wide format, which means that the date for
@@ -90,77 +76,7 @@ event (i.e. \code{date_of_heart_attack}). See
 }
 }
 }
-
-\subsection{Early and late censoring}{
-
-To support multi-row datasets, this function handles censor dates in two
-different ways.
-\itemize{
-\item \strong{Early censors} are events that censor a subject as soon as they happen
-because no new information can be collected about them, like when they die.
-\itemize{
-\item In a multi-row dataset, the minimum of these dates is used for each subject.
 }
-\item \strong{Late censors} are events that censor a subject when they \strong{stop} happening,
-such as when they stop coming to follow-up meetings.
-\itemize{
-\item In a multi-row dataset, the maximum of these dates is used for each subject.
-}
-}
-
-In a one-row-per-person dataset, this package assumes that you have
-pre-processed the censor columns appropriately. In this case, it doesn't
-matter where you put the dates in the \code{early_censors} or \code{late_censors}
-arguments.
-}
-
-\subsection{Tie-breaking}{
-
-Ties are common if you only have dates of events, but not the time they occur;
-a person can have a heart attack, receive surgery for it, and pass away all
-in one calendar day.
-
-This function breaks ties by first sorting the dates chronologically \strong{and then}
-sorting by the columns you provided in \code{event_times}, \code{early_censors}, and
-\code{late_censors}, in the order that you supplied them. This means that if an
-event and a censor occur at the same time, then the person will be flagged
-with the event. For a call like this, for example:
-
-\if{html}{\out{<div class="sourceCode r">}}\preformatted{when_did_that_happen(
-  [...]
-  event_times  = list(
-    "Cardiac Intervention" = c("ablation_date", "cied_date"),
-    "CVD Death"            = c("death_date_cvd")
-  ),
-  early_censors = c("death_date_noncvd"),
-  late_censors  = c("followup_date", "end_of_study")
-  [...]
-)
-}\if{html}{\out{</div>}}
-
-Then the sorting method is:
-\enumerate{
-\item Sort all dates chronologically, then
-\item Sub-sort by events (\code{ablation_date}, then \code{cied_date}, then \code{death_date_cvd}),
-\item Then sub-sort by early censors (\code{death_date_noncvd}),
-\item Finally, sub-sort by late censors (\code{followup_date} and finally \code{end_of_study}).
-}
-}
-
-\subsection{Blanking}{
-
-In some analyses, a blanking period can be used to ignore events that occur
-too early. A common example in the literature is ignoring early atrial
-fibrillation recurrence after surgery, as minor recurrences within 8 weeks or
-so are currently believed to be transitory and not clinically significant.
-This function implements blanking periods as something that ignores \emph{events},
-but does not ignore \emph{censoring}; if your blanking period is 3 months, and a
-subject gets an event in 1 month and then dies at 2 months, the event will be
-ignored but the person will receive an outcome of Censored and a
-time-to-event of 2 months.
-}
-}
-
 \examples{
 # `example_events` is an example dataset included with this package.
 
@@ -176,8 +92,8 @@ when_did_that_happen(
   event_times   = list(
     "Ablation"  = c("ablation_date")
   ),
-  early_censors = c("death_date"),
-  late_censors  = c("followup_date", "end_of_study")
+  early_censors = c("death_date", "end_of_study"),
+  late_censors  = c("followup_date")
 )
 
 
@@ -192,8 +108,8 @@ when_did_that_happen(
   event_times   = list(
     "Cardiac Intervention" = c("ablation_date", "cied_date")
   ),
-  early_censors = c("death_date"),
-  late_censors  = c("followup_date", "end_of_study"),
+  early_censors = c("death_date", "end_of_study"),
+  late_censors  = c("followup_date"),
   time_units    = lubridate::weeks(4),
   blanking      = lubridate::weeks(8)
 )
@@ -211,13 +127,14 @@ when_did_that_happen(
     "Ablation" = c("ablation_date"),
     "Death"    = c("death_date")
   ),
-  early_censors = NULL,
-  late_censors  = c("followup_date", "end_of_study")
+  early_censors = c("end_of_study"),
+  late_censors  = c("followup_date")
 )
 
 
 # Example of competing risks with a composite outcome (receiving a cardiac
-# intervention before dying), with a blanking period of 3 months:
+# intervention before dying), with a blanking period of 1 month and a
+# requirement that people must have at least 6 months of follow-up.
 
 when_did_that_happen(
   data          = example_events,
@@ -228,10 +145,11 @@ when_did_that_happen(
     "Cardiac Intervention" = c("ablation_date", "cied_date"),
     "Death"                = c("death_date")
   ),
-  early_censors = NULL,
-  late_censors  = c("followup_date", "end_of_study"),
+  early_censors = c("end_of_study"),
+  late_censors  = c("followup_date"),
   time_units    = lubridate::days(1),
-  blanking      = lubridate::weeks(12)
+  blanking      = lubridate::weeks(4),
+  minimum_time  = lubridate::weeks(24)
 )
 
 }

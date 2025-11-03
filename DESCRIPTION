@@ -1,15 +1,22 @@
 Package: WhenDidThatHappen
 Title: Calculate Outcome and Time-To-Event Inputs For Survival Analyses
-Version: 0.0.0.9000
+Version: 0.0.0.9004
 Authors@R: 
     person("Desi", "Quintans", , "science@desiquintans.com", role = c("aut", "cre"))
-Description: Calculates the most important part of a survival analysis: If and 
-    When an event(s) happened, or if the entry was censored. Produces outcome 
-    and time outputs for simple outcomes, composite outcomes, competing risks,
-    and composite competing risks.
+Description: The goal of 'WhenDidThatHappen' is to take raw Date or Datetime
+    data (either as one-row-per-subject or many-rows-per-subject) and produce 
+    outcome and time-to-event outputs that are ready for survival analysis using 
+    common packages such as 'survival', 'coxme', and 'cmprsk'. 'WhenDidThatHappen'
+    supports simple and composite outcomes, with optional blanking periods and 
+    optional minimum observation periods.
 License: MIT + file LICENSE
+URL: https://github.com/DesiQuintans/WhenDidThatHappen
+BugReports: https://github.com/DesiQuintans/WhenDidThatHappen/issues
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
-Depends: R (>= 3.5.0), stats, lubridate
+Depends: 
+    R (>= 3.5.0)
+Imports: 
+    lubridate
 LazyData: true

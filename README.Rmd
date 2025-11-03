@@ -1,0 +1,368 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
+
+
+
+
+
+# WhenDidThatHappen
+
+<!-- badges: start -->
+<!-- badges: end -->
+
+`WhenDidThatHappen` is a package for preparing data for survival analyses,
+also called time-to-event analyses. It takes your Date or Datetime
+data (either as one-row-per-subject or many-rows-per-subject) and calculates
+when an event(s) happened, or if the subject was censored. The calculated
+output is suitable for Kaplan-Meier models, Cox Proportional Hazards models,
+Competing Risks models, and others. It supports simple and composite outcomes, 
+with optional blanking periods and minimum observation periods.
+
+
+## Installation
+
+You can install the development version of `WhenDidThatHappen` from [GitHub](https://github.com/) with:
+
+``` r
+# install.packages("pak")
+pak::pak("DesiQuintans/WhenDidThatHappen")
+```
+
+
+
+
+
+# Basic usage
+
+## Built-in datasets
+
+`WhenDidThatHappen` expects all of your Date or Datetime variables to be in the 
+same dataframe. It comes with two example datasets; a one-row-per-person set 
+(`example_events`) and a many-rows-per-person set (`example_events_multirow`).
+
+```{r message=FALSE, warning=FALSE}
+library(WhenDidThatHappen)
+library(dplyr)
+
+head(example_events)
+```
+
+
+## Simple outcomes (e.g. `survival::survfit()`, `survival::coxph()`, `coxme::coxme()`)
+
+The most basic application is for a single event. Here, either a
+person received an ablation, or they reached the end of the study without one.
+
+```{r include=FALSE}
+set.seed(567567)
+```
+
+```{r}
+simple_outcome <- 
+  when_did_that_happen(
+    data          = example_events,    # Your input dataset
+    identifier    = "personid",        # Column with subject's identifier
+    description   = "Ablation",        # Name of outcome. Used for names/labels.
+    start_time    = "index_date",      # Each subject's start date.
+    event_times   = list(
+      "Ablation" = c("ablation_date")  # One outcome (Ablation) with one date.
+    ),
+    early_censors = c(  # Subjects are censored at their earliest date of...
+      "death_date",     #  Death, or
+      "end_of_study"    #  The end of the study.
+    ),
+    late_censors = c(   # Subjects are also censored at their last date of...
+      "followup_date"   #  Clinical contact with the study team.
+    )
+  )
+
+sample_n(simple_outcome, size = 10)
+```
+
+`when_did_that_happen()` produces a dataframe with these columns:
+
+1. The subject's identifier, so that you can join these results with the 
+   rest of your data.
+2. `time_to_...`, which is the time to event.
+3. `outcome_...`, which is the outcome that happened (here as a factor of 
+   Censored or Ablation, with Censored always being the first level).
+4. `outcome_int_...`, which is the same outcome as an integer starting from 
+   0 (= Censored), which some analysis packages prefer.
+5. `obstime_...`, which is the total time that the subject was under observation.
+
+The column names are built from the `description`, and the columns also 
+receive human-readable labels:
+
+```{r}
+Map(function(x) { attr(x, which = "label") }, simple_outcome)
+```
+
+
+## Composite outcomes (e.g. `survival::survfit()`, `survival::coxph()`, `coxme::coxme()`)
+
+You can define a composite event by providing more than one date for an outcome:
+
+```{r include=FALSE}
+set.seed(567567)
+```
+
+```{r}
+composite_outcome <- 
+  when_did_that_happen(
+    data          = example_events,
+    identifier    = "personid",
+    description   = "Cardiac Intervention",
+    start_time    = "index_date",
+    event_times   = list(
+      "Cardiac Intervention" = c("ablation_date", "cied_date")
+    ),
+    early_censors = c(
+      "death_date",
+      "end_of_study"
+    ),
+    late_censors = c(
+      "followup_date"
+    )
+  )
+
+sample_n(composite_outcome, size = 10)
+```
+
+
+## Competing risks, simple and composite (e.g. `cmprsk::crr()`)
+
+Competing risks are produced by adding more than one outcome to `event_times`, 
+each of which can be simple or composite:
+
+```{r include=FALSE}
+set.seed(567567)
+```
+
+```{r}
+comprisk_outcome <- 
+  when_did_that_happen(
+    data          = example_events,
+    identifier    = "personid",
+    description   = "Cardiac Intervention cmp Death",
+    start_time    = "index_date",
+    event_times   = list(
+      "Cardiac Intervention" = c("ablation_date", "cied_date"),
+      "Death"                = c("death_date")
+    ),
+    early_censors = c(
+      "end_of_study"
+    ),
+    late_censors = c(
+      "followup_date"
+    )
+  )
+
+sample_n(comprisk_outcome, size = 10)
+```
+
+
+
+
+
+# Advanced usage
+
+## Units of time (the `time_units` argument)
+
+You can ask `when_did_that_happen()` to return the results in any unit of time 
+you like. It defaults to units of 1 day, but you can set it to arbitrary ones 
+like units of 2 week, or units of 3 months. Note that `lubridate` does not have 
+a `months()` function, so use `lubridate::weeks()` instead.
+
+```{r eval=FALSE, echo=TRUE}
+when_did_that_happen(
+  data          = example_events,
+  identifier    = "personid",
+  description   = "Ablation",
+  start_time    = "index_date",
+  event_times   = list(
+    "Ablation" = c("ablation_date")
+  ),
+  early_censors = c("death_date", "end_of_study"),
+  late_censors  = c("followup_date"),
+  
+  time_units    = lubridate::weeks(4)  # Give `timeto_...` in units of 1 month.
+)
+```
+
+
+## Blanking periods (the `blanking` argument)
+
+In some analyses, a blanking period is added to ignore events that occur
+too early. A common example in the literature is ignoring early atrial
+fibrillation recurrence after surgery, because minor recurrences within 8 
+weeks or so are currently believed to be clinically non-significant.
+
+This function implements blanking periods as something that ignores *events*,
+but does not ignore *censoring*; if your blanking period is 3 months, and a
+subject gets an event in 1 month and then dies at 2 months, the event will be
+ignored but the person will receive an outcome of Censored and a
+time-to-event of 2 months.
+
+```{r eval=FALSE, echo=TRUE}
+when_did_that_happen(
+  data          = example_events,
+  identifier    = "personid",
+  description   = "Ablation",
+  start_time    = "index_date",
+  event_times   = list(
+    "Ablation" = c("ablation_date")
+  ),
+  early_censors = c("death_date", "end_of_study"),
+  late_censors  = c("followup_date"),
+  
+  time_units    = lubridate::weeks(4),  # Give `timeto_...` in units of 1 month.
+  blanking      = lubridate::weeks(8)   # A 2-month post-index blanking period.
+)
+```
+
+
+## Minimum observation time (the `minimum_time` argument)
+
+You may require subjects to be in your study long enough to have had a chance to
+develop the failure type you're trying to investigate. You can do this by setting
+the `minimum_time` argument; anyone who has less than this amount of time in the
+study becomes `NA` for the analysis.
+
+This function calculates observation time as the length of time from the index
+date to the subject's earliest censor date, regardless of whether they had an 
+outcome or not.
+
+```{r eval=FALSE, echo=TRUE}
+when_did_that_happen(
+  data         = example_events,
+  identifier   = "personid",
+  description  = "Ablation",
+  start_time   = "index_date",
+  event_times  = list(
+    "Ablation" = c("ablation_date")
+  ),
+  early_censors = c("death_date", "end_of_study"),
+  late_censors  = c("followup_date"),
+  
+  time_units   = lubridate::weeks(4),  # Give `timeto_...` in units of 1 month.
+  blanking     = lubridate::weeks(8),  # A 2-month post-index blanking period.
+  minimum_time = lubridate::weeks(24)  # Must have ≥6 months of observation.
+)
+```
+
+
+## The `debug` argument
+
+Users may want to double-check what the package is doing, or investigate odd
+results in their dataset. Setting `debug = TRUE` makes the package output an
+extra diagnostic table.
+
+```{r}
+debug_example <- 
+  when_did_that_happen(
+    data         = example_events,
+    identifier   = "personid",
+    description  = "Ablation",
+    start_time   = "index_date",
+    event_times  = list(
+      "Ablation" = c("ablation_date")
+    ),
+    early_censors = c("death_date", "end_of_study"),
+    late_censors  = c("followup_date"),
+    
+    time_units   = lubridate::weeks(4),   # Give `timeto_...` in units of 1 month.
+    blanking     = lubridate::weeks(8),   # A 2-month post-index blanking period.
+    minimum_time = lubridate::weeks(24),  # Must have ≥6 months of observation.
+    debug = TRUE
+  )
+
+str(debug_example, 1)
+
+head(debug_example$Diagnostic, n = 10)
+```
+
+The `$Diagnostic` dataframe is the full table of each subject's events and 
+censors, sorted chronologically and then by event/censor (see Tie-breaking for 
+more details about this). It is the last thing the package sees before
+it keeps everyone's first row, which is their earliest post-index outcome. 
+
+
+# Implementation details
+
+## Dataframe shapes for input
+
+This function requires data in wide format, which means that the date for
+each event appears in a separate column. It supports both one-row-per-person
+and many-rows-per-person data.
+
+- In one-row-per-person, it is assumed that the variables have been appropriately
+  pre-processed by you. For example, you might have already calculated a 
+  `date_of_earliest_heart_attack`, or a `date_of_last_contact`, or a 
+  `study_withdrawal_date`.
+  - See the included dataset `example_events` for an example of this.
+- In many-rows-per-person, the variables can contain the date of every known
+  event (i.e. `date_of_heart_attack`, or `date_of_survey`).
+  - See the included dataset `example_events_multirow` for an example.
+
+
+## Early and late censoring
+
+To support multi-row datasets, this function handles censor dates in two
+different ways.
+
+- **Early censors** are events that censor a subject as soon as they happen
+  because no new information can be collected about them, like when they die.
+  - In a multi-row dataset, the minimum of these dates is used for each subject.
+- **Late censors** are events that censor a subject when they **stop** happening,
+  such as when they stop coming to follow-up meetings.
+  - In a multi-row dataset, the maximum of these dates is used for each subject.
+
+In a one-row-per-person dataset, this package assumes that you have
+pre-processed the censor columns appropriately. In this case, it doesn't
+matter whether you put the dates in the `early_censors` or `late_censors`
+arguments.
+
+
+## Tie-breaking
+
+Ties are common if you only have dates of events, but not the time they occur;
+a person can have a heart attack, receive surgery for it, and pass away all
+in one calendar day.
+
+This function breaks ties by first sorting the dates chronologically **and then**
+sorting by the columns you provided in `event_times`, `early_censors`, and
+`late_censors`, in the order that you supplied them. This means that if an
+event and a censor occur at the same time, then the person will be flagged
+with the event. For a call like this, for example:
+
+```r
+when_did_that_happen(
+  [...]
+  event_times  = list(
+    "Cardiac Intervention" = c("ablation_date", "cied_date"),
+    "CVD Death"            = c("death_date_cvd")
+  ),
+  early_censors = c("death_date_noncvd", "end_of_study"),
+  late_censors  = c("followup_date")
+  [...]
+)
+```
+
+Then the sorting method is:
+
+1. Sort all dates chronologically, then
+2. Sub-sort by events (`ablation_date`, then `cied_date`, then `death_date_cvd`),
+3. Then sub-sort by early censors (`death_date_noncvd`, `end_of_study`),
+4. Finally, sub-sort by late censors (`followup_date`).
