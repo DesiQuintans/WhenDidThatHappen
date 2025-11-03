@@ -355,7 +355,7 @@ when_did_that_happen(
   
   time_units   = lubridate::weeks(4),  # Give `timeto_...` in units of 1 month.
   blanking     = lubridate::weeks(1),  # A 1-week post-index blanking period.
-  minimum_time = lubridate::weeks(24)  # Must have ≥6 months of observation.
+  minimum_time = lubridate::weeks(24)  # Must have >= 6 months of observation.
 )
 ```
 
@@ -381,7 +381,7 @@ debug_example <-
     
     time_units   = lubridate::weeks(4),   # Give `timeto_...` in units of 1 month.
     blanking     = lubridate::weeks(8),   # A 2-month post-index blanking period.
-    minimum_time = lubridate::weeks(24),  # Must have ≥6 months of observation.
+    minimum_time = lubridate::weeks(24),  # Must have >= 6 months of observation.
     debug = TRUE
   )
 
