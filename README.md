@@ -54,8 +54,8 @@ You can install the development version of `WhenDidThatHappen` from
 [GitHub](https://github.com/) with:
 
 ``` r
-# install.packages("pak")
-pak::pak("DesiQuintans/WhenDidThatHappen")
+# install.packages("remotes")
+remotes::install_github("DesiQuintans/WhenDidThatHappen", build_vignettes = TRUE)
 ```
 
 # Basic usage
