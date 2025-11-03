@@ -1,0 +1,15 @@
+Package: WhenDidThatHappen
+Title: Calculate Outcome and Time-To-Event Inputs For Survival Analyses
+Version: 0.0.0.9000
+Authors@R: 
+    person("Desi", "Quintans", , "science@desiquintans.com", role = c("aut", "cre"))
+Description: Calculates the most important part of a survival analysis: If and 
+    When an event(s) happened, or if the entry was censored. Produces outcome 
+    and time outputs for simple outcomes, composite outcomes, competing risks,
+    and composite competing risks.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
+Depends: R (>= 3.5.0), stats, lubridate
+LazyData: true
