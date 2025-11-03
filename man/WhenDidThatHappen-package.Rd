@@ -6,7 +6,7 @@
 \alias{WhenDidThatHappen-package}
 \title{WhenDidThatHappen: Calculate Outcome and Time-To-Event Inputs For Survival Analyses}
 \description{
-The goal of 'WhenDidThatHappen' is to take raw Date or Datetime data (either as one-row-per-subject or many-rows-per-subject) and produce outcome and time-to-event outputs that are ready for survival analysis using common packages such as 'survival', 'coxme', and 'cmprsk'. 'WhenDidThatHappen' supports simple and composite outcomes, with optional blanking periods and optional minimum observation periods.
+'WhenDidThatHappen' prepares survival analyses. It takes your raw Datetimes (either as one- or many-rows-per-subject) and derives time-to-event variables for use with common packages such as 'survival', 'coxme', and 'cmprsk'. It supports right-censored simple and composite outcomes, with optional blanking periods and minimum observation periods.
 }
 \seealso{
 Useful links:

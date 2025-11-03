@@ -42,13 +42,17 @@ knitr::opts_chunk$set(
 <!-- badges: start -->
 <!-- badges: end -->
 
-`WhenDidThatHappen` is a package for preparing data for survival analyses,
-also called time-to-event analyses. It takes your Date or Datetime
-data (either as one-row-per-subject or many-rows-per-subject) and calculates
-when an event(s) happened, or if the subject was censored. The calculated
-output is suitable for Kaplan-Meier models, Cox Proportional Hazards models,
-Competing Risks models, and others. It supports simple and composite outcomes, 
-with optional blanking periods and minimum observation periods.
+Manually preparing your own time-to-event variables for survival analyses can 
+be tricky, and it gets trickier for more complicated analyses like competing 
+risks analyses with composite outcomes.
+
+`WhenDidThatHappen` is a package for preparing time-to-event data in a
+consistent and verifiable way. It takes your Date or Datetime data (either as
+one-row-per-subject or many-rows-per-subject) and calculates when an event(s)
+happened, or if the subject was censored. The calculated output is suitable for
+Kaplan-Meier models, Cox Proportional Hazards models, Competing Risks models,
+and others. It supports simple and composite outcomes, with optional blanking
+periods and minimum observation periods.
 
 
 ## Installation
