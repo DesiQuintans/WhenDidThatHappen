@@ -560,25 +560,25 @@ when_did_that_happen <- function(data, analysis, identifier, start_time, event_t
 
 # Supporting functions ----------------------------------------------------
 
-#' Summarises a vector of dates for each date x identifier
-#'
-#' @param data (Dataframe) The input data.
-#' @param identifier (Character) The name of one column in `data` that identifies subjects (e.g. patient number or machine serial number).
-#' @param outcome (Character) The outcome being summarised.
-#' @param dates (Character) The names of one or more Date/Datetime columns in `data` that are related to the same outcome.
-#' @param FUN (Character) The name of a function to call on `dates`. Currently accepts `"min"` (to find the earliest date per identifier), and `"max"` (the latest date).
-#'
-#' @returns A long-shaped dataframe, with a row for each identifier x date.
-#'
-#' @examples
-#' WhenDidThatHappen:::summarise_dates(
-#'   data       = example_events_multirow,
-#'   identifier = "personid",
-#'   outcome    = "Cardiac intervention",
-#'   dates      = c("cied_date", "ablation_date"),
-#'   FUN        = "max"
-#' )
-#'
+# Summarises a vector of dates for each date x identifier
+#
+# @param data (Dataframe) The input data.
+# @param identifier (Character) The name of one column in `data` that identifies subjects (e.g. patient number or machine serial number).
+# @param outcome (Character) The outcome being summarised.
+# @param dates (Character) The names of one or more Date/Datetime columns in `data` that are related to the same outcome.
+# @param FUN (Character) The name of a function to call on `dates`. Currently accepts `"min"` (to find the earliest date per identifier), and `"max"` (the latest date).
+#
+# @returns A long-shaped dataframe, with a row for each identifier x date.
+#
+# @examples
+# WhenDidThatHappen:::summarise_dates(
+#   data       = example_events_multirow,
+#   identifier = "personid",
+#   outcome    = "Cardiac intervention",
+#   dates      = c("cied_date", "ablation_date"),
+#   FUN        = "max"
+# )
+#
 summarise_dates <- function(data, identifier, outcome, dates, FUN = c("min", "max")) {
   FUN <- match.arg(FUN)
 
