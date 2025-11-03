@@ -6,8 +6,8 @@
 \usage{
 when_did_that_happen(
   data,
+  analysis,
   identifier,
-  description,
   start_time,
   event_times,
   early_censors = NULL,
@@ -19,11 +19,11 @@ when_did_that_happen(
 )
 }
 \arguments{
-\item{data}{(Dataframe) A dataframe.}
+\item{data}{(Dataframe) The input data.}
+
+\item{analysis}{(Character) A human-readable name for your analysis, which is used give labels to the output variables. A suffix for the final variable names will be generated from this.}
 
 \item{identifier}{(Character) The name of one column in \code{data} that identifies subjects (e.g. patient number or machine serial number).}
-
-\item{description}{(Character) A human-readable name for your analysis, which is used give labels to the output variables. A suffix for the final variable names will be generated from this.}
 
 \item{start_time}{(Character) The name of one Date/Datetime column in \code{data} that provides the start date of observation for each subject.}
 
@@ -82,18 +82,25 @@ event (i.e. \code{date_of_heart_attack}). See
 
 
 # Example of a simple event (Ablated or Censored), reported in units of 1 day
-# with no blanking period:
+# with no blanking period or minimum follow-up requirement:
 
 when_did_that_happen(
   data          = example_events,
+  analysis      = "Ablation",
+
   identifier    = "personid",
-  description   = "Ablation",
   start_time    = "index_date",
   event_times   = list(
     "Ablation"  = c("ablation_date")
   ),
   early_censors = c("death_date", "end_of_study"),
-  late_censors  = c("followup_date")
+  late_censors  = c("followup_date"),
+
+  time_units    = lubridate::days(1),
+  blanking      = lubridate::days(0),
+  minimum_time  = lubridate::days(0),
+
+  debug = FALSE
 )
 
 
@@ -102,44 +109,34 @@ when_did_that_happen(
 
 when_did_that_happen(
   data          = example_events,
+  analysis      = "Cardiac Intervention",
+
   identifier    = "personid",
-  description   = "Cardiac Intervention",
   start_time    = "index_date",
   event_times   = list(
     "Cardiac Intervention" = c("ablation_date", "cied_date")
   ),
   early_censors = c("death_date", "end_of_study"),
   late_censors  = c("followup_date"),
+
   time_units    = lubridate::weeks(4),
-  blanking      = lubridate::weeks(8)
-)
+  blanking      = lubridate::weeks(8),
+  minimum_time  = lubridate::days(0),
 
-
-# Example of competing risks (being ablated before dying). Here I don't have
-# an early censor date, so I provide `early_censors = NULL`.
-
-when_did_that_happen(
-  data          = example_events,
-  identifier    = "personid",
-  description   = "Ablation cw Death",
-  start_time    = "index_date",
-  event_times   = list(
-    "Ablation" = c("ablation_date"),
-    "Death"    = c("death_date")
-  ),
-  early_censors = c("end_of_study"),
-  late_censors  = c("followup_date")
+  debug = FALSE
 )
 
 
 # Example of competing risks with a composite outcome (receiving a cardiac
-# intervention before dying), with a blanking period of 1 month and a
-# requirement that people must have at least 6 months of follow-up.
+# intervention) versus a simple outcome (dying), with a blanking period
+# of 1 month and a requirement that people must have at least 6 months of
+# observation time in the study.
 
 when_did_that_happen(
   data          = example_events,
+  analysis      = "Cardiac Intervention cw Death",
+
   identifier    = "personid",
-  description   = "Cardiac Intervention cw Death",
   start_time    = "index_date",
   event_times   = list(
     "Cardiac Intervention" = c("ablation_date", "cied_date"),
@@ -147,9 +144,12 @@ when_did_that_happen(
   ),
   early_censors = c("end_of_study"),
   late_censors  = c("followup_date"),
+
   time_units    = lubridate::days(1),
   blanking      = lubridate::weeks(4),
-  minimum_time  = lubridate::weeks(24)
+  minimum_time  = lubridate::weeks(24),
+
+  debug = FALSE
 )
 
 }

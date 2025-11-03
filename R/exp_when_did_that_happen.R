@@ -21,9 +21,9 @@
 #'   event (i.e. `date_of_heart_attack`). See
 #'   - See the included dataset `example_events_multirow` for an example.
 #'
-#' @param data (Dataframe) A dataframe.
+#' @param data (Dataframe) The input data.
+#' @param analysis (Character) A human-readable name for your analysis, which is used give labels to the output variables. A suffix for the final variable names will be generated from this.
 #' @param identifier (Character) The name of one column in `data` that identifies subjects (e.g. patient number or machine serial number).
-#' @param description (Character) A human-readable name for your analysis, which is used give labels to the output variables. A suffix for the final variable names will be generated from this.
 #' @param start_time (Character) The name of one Date/Datetime column in `data` that provides the start date of observation for each subject.
 #' @param event_times (List with named Characters) Within this List, the names are human-readable labels for the event, and the contents are the names of Date/Datetime columns in `data` that are considered for that event. See 'Examples'.
 #' @param early_censors (Character) The names of one or more Date/Datetime columns in `data` that are used to censor a subject as soon as they occur because no more information can be collected about them, such as death or study withdrawal. At least one censor date must be given in either this argument or in `late_censors`. If this argument is not needed, leave it as `NULL`.
@@ -49,18 +49,25 @@
 #'
 #'
 #' # Example of a simple event (Ablated or Censored), reported in units of 1 day
-#' # with no blanking period:
+#' # with no blanking period or minimum follow-up requirement:
 #'
 #' when_did_that_happen(
 #'   data          = example_events,
+#'   analysis      = "Ablation",
+#'
 #'   identifier    = "personid",
-#'   description   = "Ablation",
 #'   start_time    = "index_date",
 #'   event_times   = list(
 #'     "Ablation"  = c("ablation_date")
 #'   ),
 #'   early_censors = c("death_date", "end_of_study"),
-#'   late_censors  = c("followup_date")
+#'   late_censors  = c("followup_date"),
+#'
+#'   time_units    = lubridate::days(1),
+#'   blanking      = lubridate::days(0),
+#'   minimum_time  = lubridate::days(0),
+#'
+#'   debug = FALSE
 #' )
 #'
 #'
@@ -69,44 +76,34 @@
 #'
 #' when_did_that_happen(
 #'   data          = example_events,
+#'   analysis      = "Cardiac Intervention",
+#'
 #'   identifier    = "personid",
-#'   description   = "Cardiac Intervention",
 #'   start_time    = "index_date",
 #'   event_times   = list(
 #'     "Cardiac Intervention" = c("ablation_date", "cied_date")
 #'   ),
 #'   early_censors = c("death_date", "end_of_study"),
 #'   late_censors  = c("followup_date"),
+#'
 #'   time_units    = lubridate::weeks(4),
-#'   blanking      = lubridate::weeks(8)
-#' )
+#'   blanking      = lubridate::weeks(8),
+#'   minimum_time  = lubridate::days(0),
 #'
-#'
-#' # Example of competing risks (being ablated before dying). Here I don't have
-#' # an early censor date, so I provide `early_censors = NULL`.
-#'
-#' when_did_that_happen(
-#'   data          = example_events,
-#'   identifier    = "personid",
-#'   description   = "Ablation cw Death",
-#'   start_time    = "index_date",
-#'   event_times   = list(
-#'     "Ablation" = c("ablation_date"),
-#'     "Death"    = c("death_date")
-#'   ),
-#'   early_censors = c("end_of_study"),
-#'   late_censors  = c("followup_date")
+#'   debug = FALSE
 #' )
 #'
 #'
 #' # Example of competing risks with a composite outcome (receiving a cardiac
-#' # intervention before dying), with a blanking period of 1 month and a
-#' # requirement that people must have at least 6 months of follow-up.
+#' # intervention) versus a simple outcome (dying), with a blanking period
+#' # of 1 month and a requirement that people must have at least 6 months of
+#' # observation time in the study.
 #'
 #' when_did_that_happen(
 #'   data          = example_events,
+#'   analysis      = "Cardiac Intervention cw Death",
+#'
 #'   identifier    = "personid",
-#'   description   = "Cardiac Intervention cw Death",
 #'   start_time    = "index_date",
 #'   event_times   = list(
 #'     "Cardiac Intervention" = c("ablation_date", "cied_date"),
@@ -114,12 +111,15 @@
 #'   ),
 #'   early_censors = c("end_of_study"),
 #'   late_censors  = c("followup_date"),
+#'
 #'   time_units    = lubridate::days(1),
 #'   blanking      = lubridate::weeks(4),
-#'   minimum_time  = lubridate::weeks(24)
+#'   minimum_time  = lubridate::weeks(24),
+#'
+#'   debug = FALSE
 #' )
 #'
-when_did_that_happen <- function(data, identifier, description, start_time, event_times, early_censors = NULL, late_censors = NULL, time_units = lubridate::days(1), blanking = lubridate::days(0), minimum_time = lubridate::days(0), debug = FALSE) {
+when_did_that_happen <- function(data, analysis, identifier, start_time, event_times, early_censors = NULL, late_censors = NULL, time_units = lubridate::days(1), blanking = lubridate::days(0), minimum_time = lubridate::days(0), debug = FALSE) {
 
   # `data` needs to be coerced into a base data.frame, or else I get errors
   # in `aggregate()` if `data` is actually a data.table.
@@ -207,7 +207,7 @@ when_did_that_happen <- function(data, identifier, description, start_time, even
   # 1. Set up internal functions and variables ------------------------------
 
   # Column names for the results columns.
-  varname <- tolower(gsub("\\.{2,}", ".", make.names(description)))
+  varname <- tolower(gsub("\\.{2,}", ".", make.names(analysis)))
 
   .timeto_colname      <- paste0("timeto_",      varname)
   .obstime_colname     <- paste0("obstime_",     varname)
@@ -219,8 +219,6 @@ when_did_that_happen <- function(data, identifier, description, start_time, even
   outcome_names <- rep(names(event_times), times = lapply(event_times, length))  # Which outcome does each event column belong to?
 
   .censor_name  <- "~.~.Censored.~.~"  # Placeholder value for Censored outcomes, so chosen to be unlikely to match a user's outcome name.
-  # early_censor_names <- rep(.censor_name, times = length(early_censors))  # All censor columns belong to the Censored outcome.
-  # late_censor_names  <- rep(.censor_name, times = length(late_censors))   # All censor columns belong to the Censored outcome.
 
 
   # 2. Calculate early censor dates -----------------------------------------
@@ -229,45 +227,14 @@ when_did_that_happen <- function(data, identifier, description, start_time, even
   # soon as they die. I handle them by taking the earliest in each variable for
   # each person, to make it possible for the user to provide long data.
 
-  if (is.null(early_censors) == FALSE & length(early_censors) > 0) {
-    early_censor_dates <-
-      Reduce(
-        rbind,
-
-        Map(
-          function(x) {
-            result <-
-              stats::aggregate(
-                x = data[, x],
-                by = list(data[[identifier]]),
-                FUN  =
-                  function(vec) {
-                    if (all(is.na(vec))) {  # Faster + less mem_alloc than `length(vec[!is.na(vec)]) == 0`
-                      return(lubridate::NA_Date_)
-                    } else {
-                      return(min(vec, na.rm = TRUE))
-                    }
-                  },
-                drop = FALSE
-              )
-
-            names(result) <- c(identifier, ".evtdate")
-            result[[".evtcol"]]  <- x
-            result[[".outcome"]] <- .censor_name
-
-            result <- result[is.na(result[[".evtdate"]]) == FALSE, ]
-
-            return(result)
-          },
-
-          early_censors
-        )
-      )
-  } else {
-    early_censor_dates <- data.frame()
-  }
-
-  rownames(early_censor_dates) <- NULL
+  early_censor_dates <-
+    summarise_dates(
+      data       = data,
+      identifier = identifier,
+      outcome    = .censor_name,
+      dates      = early_censors,
+      FUN        = "min"
+    )
 
 
 
@@ -277,47 +244,14 @@ when_did_that_happen <- function(data, identifier, description, start_time, even
   # dates of being contacted by study RAs, but we only censor when contact
   # is lost.
 
-  if (is.null(late_censors) == FALSE & length(late_censors) > 0) {
-    late_censor_dates <-
-      Reduce(
-        rbind,
-
-        Map(
-          function(x) {
-            result <-
-              stats::aggregate(
-                x = data[, x],
-                by = list(data[[identifier]]),
-                FUN  =
-                  function(vec) {
-                    if (all(is.na(vec))) {  # Faster + less mem_alloc than `length(vec[!is.na(vec)]) == 0`
-                      return(lubridate::NA_Date_)
-                    } else {
-                      return(max(vec, na.rm = TRUE))
-                    }
-                  },
-                drop = FALSE
-              )
-
-            names(result) <- c(identifier, ".evtdate")
-            result[[".evtcol"]]  <- x
-            result[[".outcome"]] <- .censor_name
-
-            result <- result[is.na(result[[".evtdate"]]) == FALSE, ]
-
-            return(result)
-          },
-
-          late_censors
-        )
-      )
-  } else {
-    late_censor_dates <- data.frame()
-  }
-
-  rownames(late_censor_dates) <- NULL
-
-
+  late_censor_dates <-
+    summarise_dates(
+      data       = data,
+      identifier = identifier,
+      outcome    = .censor_name,
+      dates      = late_censors,
+      FUN        = "max"
+    )
 
 
 
@@ -603,10 +537,10 @@ when_did_that_happen <- function(data, identifier, description, start_time, even
       no.dups = FALSE
     )
 
-  attr(result[[.timeto_colname]],      "label") <- paste("Time to",    description)
-  attr(result[[.outcome_fct_colname]], "label") <- paste("Outcome of", description)
-  attr(result[[.outcome_int_colname]], "label") <- paste("Outcome of", description)
-  attr(result[[.obstime_colname]],     "label") <- paste("Total observation time for", description, "outcome")
+  attr(result[[.timeto_colname]],      "label") <- paste("Time to",    analysis)
+  attr(result[[.outcome_fct_colname]], "label") <- paste("Outcome of", analysis)
+  attr(result[[.outcome_int_colname]], "label") <- paste("Outcome of", analysis)
+  attr(result[[.obstime_colname]],     "label") <- paste("Total observation time for", analysis, "outcome")
 
   if (debug == TRUE) {
     return(
@@ -618,4 +552,75 @@ when_did_that_happen <- function(data, identifier, description, start_time, even
   } else {
     return(result)
   }
+}
+
+
+
+
+
+# Supporting functions ----------------------------------------------------
+
+#' Summarises a vector of dates for each date x identifier
+#'
+#' @param data (Dataframe) The input data.
+#' @param identifier (Character) The name of one column in `data` that identifies subjects (e.g. patient number or machine serial number).
+#' @param outcome (Character) The outcome being summarised.
+#' @param dates (Character) The names of one or more Date/Datetime columns in `data` that are related to the same outcome.
+#' @param FUN (Character) The name of a function to call on `dates`. Currently accepts `"min"` (to find the earliest date per identifier), and `"max"` (the latest date).
+#'
+#' @returns A long-shaped dataframe, with a row for each identifier x date.
+#'
+#' @examples
+#' WhenDidThatHappen:::summarise_dates(
+#'   data       = example_events_multirow,
+#'   identifier = "personid",
+#'   outcome    = "Cardiac intervention",
+#'   dates      = c("cied_date", "ablation_date"),
+#'   FUN        = "max"
+#' )
+#'
+summarise_dates <- function(data, identifier, outcome, dates, FUN = c("min", "max")) {
+  FUN <- match.arg(FUN)
+
+  if (is.null(dates) == FALSE & length(dates) > 0) {
+    dates_summary <-
+      Reduce(
+        rbind,
+
+        Map(
+          function(x) {
+            result <-
+              stats::aggregate(
+                x = data[, x],
+                by = list(data[[identifier]]),
+                FUN =
+                  function(vec) {
+                    if (all(is.na(vec))) {  # Faster + less mem_alloc than `length(vec[!is.na(vec)]) == 0`
+                      return(lubridate::NA_Date_)
+                    } else {
+                      return(eval(call(FUN, vec, na.rm = TRUE)))
+                    }
+                  },
+                drop = FALSE
+              )
+
+            names(result) <- c(identifier, ".evtdate")
+            result[[".evtcol"]]  <- x
+            result[[".outcome"]] <- outcome
+
+            result <- result[is.na(result[[".evtdate"]]) == FALSE, ]
+
+            return(result)
+          },
+
+          dates
+        )
+      )
+  } else {
+    dates_summary <- data.frame()
+  }
+
+  rownames(dates_summary) <- NULL
+
+  return(dates_summary)
 }

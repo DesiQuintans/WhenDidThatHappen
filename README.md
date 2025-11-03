@@ -65,7 +65,6 @@ one-row-per-person set (`example_events`) and a many-rows-per-person set
 
 ``` r
 library(WhenDidThatHappen)
-library(dplyr)
 
 head(example_events)
 #>   personid index_date ablation_date  cied_date death_date followup_date
@@ -93,8 +92,9 @@ received an ablation, or they reached the end of the study without one.
 simple_outcome <- 
   when_did_that_happen(
     data          = example_events,    # Your input dataset
+    analysis      = "Ablation",        # Name of outcome. Used for names/labels.
+    
     identifier    = "personid",        # Column with subject's identifier
-    description   = "Ablation",        # Name of outcome. Used for names/labels.
     start_time    = "index_date",      # Each subject's start date.
     event_times   = list(
       "Ablation" = c("ablation_date")  # One outcome (Ablation) with one date.
@@ -108,29 +108,25 @@ simple_outcome <-
     )
   )
 
-sample_n(simple_outcome, size = 10)
+some_people <- c(1, 4, 6, 8, 16, 37, 40)  # Some `personid`s to look at.
+
+simple_outcome[some_people, ]
 #>    personid timeto_ablation outcome_ablation outcome_int_ablation
-#> 1        24             136         Censored                    0
-#> 2        16             346         Censored                    0
-#> 3        21             208         Censored                    0
-#> 4        26             133         Censored                    0
-#> 5        22              19         Ablation                    1
-#> 6        12             355         Censored                    0
-#> 7        39             299         Censored                    0
-#> 8        15              21         Ablation                    1
-#> 9        14               1         Ablation                    1
-#> 10       13              11         Ablation                    1
+#> 1         1             272         Censored                    0
+#> 4         4              28         Ablation                    1
+#> 6         6             305         Censored                    0
+#> 8         8               9         Ablation                    1
+#> 16       16             346         Censored                    0
+#> 37       37             197         Censored                    0
+#> 40       40             334         Censored                    0
 #>    obstime_ablation
-#> 1               136
-#> 2               346
-#> 3               208
-#> 4               133
-#> 5               266
-#> 6               355
-#> 7               299
-#> 8                94
-#> 9               593
-#> 10              289
+#> 1               272
+#> 4               253
+#> 6               305
+#> 8               109
+#> 16              346
+#> 37              197
+#> 40              334
 ```
 
 `when_did_that_happen()` produces a dataframe with these columns:
@@ -176,8 +172,9 @@ outcome:
 composite_outcome <- 
   when_did_that_happen(
     data          = example_events,
+    analysis      = "Cardiac Intervention",
+    
     identifier    = "personid",
-    description   = "Cardiac Intervention",
     start_time    = "index_date",
     event_times   = list(
       "Cardiac Intervention" = c("ablation_date", "cied_date")
@@ -191,29 +188,23 @@ composite_outcome <-
     )
   )
 
-sample_n(composite_outcome, size = 10)
+composite_outcome[some_people, ]
 #>    personid timeto_cardiac.intervention outcome_cardiac.intervention
-#> 1        24                           9         Cardiac Intervention
-#> 2        16                         346                     Censored
-#> 3        21                         208                     Censored
-#> 4        26                         133                     Censored
-#> 5        22                          19         Cardiac Intervention
-#> 6        12                          80         Cardiac Intervention
-#> 7        39                         299                     Censored
-#> 8        15                          21         Cardiac Intervention
-#> 9        14                           1         Cardiac Intervention
-#> 10       13                           3         Cardiac Intervention
+#> 1         1                          45         Cardiac Intervention
+#> 4         4                          28         Cardiac Intervention
+#> 6         6                          11         Cardiac Intervention
+#> 8         8                           9         Cardiac Intervention
+#> 16       16                         346                     Censored
+#> 37       37                         197                     Censored
+#> 40       40                         334                     Censored
 #>    outcome_int_cardiac.intervention obstime_cardiac.intervention
-#> 1                                 1                          136
-#> 2                                 0                          346
-#> 3                                 0                          208
-#> 4                                 0                          133
-#> 5                                 1                          266
-#> 6                                 1                          355
-#> 7                                 0                          299
-#> 8                                 1                           94
-#> 9                                 1                          593
-#> 10                                1                          289
+#> 1                                 1                          272
+#> 4                                 1                          253
+#> 6                                 1                          305
+#> 8                                 1                          109
+#> 16                                0                          346
+#> 37                                0                          197
+#> 40                                0                          334
 ```
 
 ## Competing risks, simple and composite (e.g. `cmprsk::crr()`)
@@ -225,8 +216,9 @@ Competing risks are produced by adding more than one outcome to
 comprisk_outcome <- 
   when_did_that_happen(
     data          = example_events,
+    analysis      = "Cardiac Intervention cmp Death",
+    
     identifier    = "personid",
-    description   = "Cardiac Intervention cmp Death",
     start_time    = "index_date",
     event_times   = list(
       "Cardiac Intervention" = c("ablation_date", "cied_date"),
@@ -240,51 +232,39 @@ comprisk_outcome <-
     )
   )
 
-sample_n(comprisk_outcome, size = 10)
+comprisk_outcome[some_people, ]
 #>    personid timeto_cardiac.intervention.cmp.death
-#> 1        24                                     9
-#> 2        16                                   346
-#> 3        21                                   208
-#> 4        26                                   133
-#> 5        22                                    19
-#> 6        12                                    80
-#> 7        39                                   299
-#> 8        15                                    21
-#> 9        14                                     1
-#> 10       13                                     3
+#> 1         1                                    45
+#> 4         4                                    28
+#> 6         6                                    11
+#> 8         8                                     9
+#> 16       16                                   346
+#> 37       37                                   197
+#> 40       40                                   334
 #>    outcome_cardiac.intervention.cmp.death
 #> 1                    Cardiac Intervention
-#> 2                                   Death
-#> 3                                Censored
-#> 4                                Censored
-#> 5                    Cardiac Intervention
+#> 4                    Cardiac Intervention
 #> 6                    Cardiac Intervention
-#> 7                                Censored
 #> 8                    Cardiac Intervention
-#> 9                    Cardiac Intervention
-#> 10                   Cardiac Intervention
+#> 16                                  Death
+#> 37                               Censored
+#> 40                               Censored
 #>    outcome_int_cardiac.intervention.cmp.death
 #> 1                                           1
-#> 2                                           2
-#> 3                                           0
-#> 4                                           0
-#> 5                                           1
+#> 4                                           1
 #> 6                                           1
-#> 7                                           0
 #> 8                                           1
-#> 9                                           1
-#> 10                                          1
+#> 16                                          2
+#> 37                                          0
+#> 40                                          0
 #>    obstime_cardiac.intervention.cmp.death
-#> 1                                     136
-#> 2                                     464
-#> 3                                     208
-#> 4                                     133
-#> 5                                     266
-#> 6                                     355
-#> 7                                     299
-#> 8                                      94
-#> 9                                     593
-#> 10                                    289
+#> 1                                     272
+#> 4                                     253
+#> 6                                     305
+#> 8                                     109
+#> 16                                    464
+#> 37                                    197
+#> 40                                    334
 ```
 
 # Advanced usage
@@ -300,8 +280,9 @@ arbitrary ones like units of 2 week, or units of 3 months. Note that
 ``` r
 when_did_that_happen(
   data          = example_events,
+  analysis      = "Ablation",
+  
   identifier    = "personid",
-  description   = "Ablation",
   start_time    = "index_date",
   event_times   = list(
     "Ablation" = c("ablation_date")
@@ -329,8 +310,9 @@ of Censored and a time-to-event of 2 months.
 ``` r
 when_did_that_happen(
   data          = example_events,
+  analysis      = "Ablation",
+  
   identifier    = "personid",
-  description   = "Ablation",
   start_time    = "index_date",
   event_times   = list(
     "Ablation" = c("ablation_date")
@@ -339,7 +321,7 @@ when_did_that_happen(
   late_censors  = c("followup_date"),
   
   time_units    = lubridate::weeks(4),  # Give `timeto_...` in units of 1 month.
-  blanking      = lubridate::weeks(8)   # A 2-month post-index blanking period.
+  blanking      = lubridate::weeks(1)   # A 1week post-index blanking period.
 )
 ```
 
@@ -357,8 +339,9 @@ they had an outcome or not.
 ``` r
 when_did_that_happen(
   data         = example_events,
-  identifier   = "personid",
-  description  = "Ablation",
+  analysis      = "Ablation",
+  
+  identifier    = "personid",
   start_time   = "index_date",
   event_times  = list(
     "Ablation" = c("ablation_date")
@@ -367,7 +350,7 @@ when_did_that_happen(
   late_censors  = c("followup_date"),
   
   time_units   = lubridate::weeks(4),  # Give `timeto_...` in units of 1 month.
-  blanking     = lubridate::weeks(8),  # A 2-month post-index blanking period.
+  blanking     = lubridate::weeks(1),  # A 1-week post-index blanking period.
   minimum_time = lubridate::weeks(24)  # Must have ≥6 months of observation.
 )
 ```
@@ -382,8 +365,9 @@ output an extra diagnostic table.
 debug_example <- 
   when_did_that_happen(
     data         = example_events,
-    identifier   = "personid",
-    description  = "Ablation",
+    analysis      = "Ablation",
+  
+    identifier    = "personid",
     start_time   = "index_date",
     event_times  = list(
       "Ablation" = c("ablation_date")
@@ -472,9 +456,9 @@ matter whether you put the dates in the `early_censors` or
 
 ## Tie-breaking
 
-Ties are common if you only have dates of events, but not the time they
-occur; a person can have a heart attack, receive surgery for it, and
-pass away all in one calendar day.
+Ties are common if you only have the dates of events, but not the times
+of the day when they occured, e.g. a person can have a heart attack,
+receive surgery for it, and pass away all in one calendar day.
 
 This function breaks ties by first sorting the dates chronologically
 **and then** sorting by the columns you provided in `event_times`,
