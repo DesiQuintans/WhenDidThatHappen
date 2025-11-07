@@ -11,6 +11,8 @@ knitr::opts_chunk$set(
   fig.path = "man/figures/README-",
   out.width = "100%"
 )
+
+options(width = 150)
 ```
 
 
@@ -49,11 +51,11 @@ risks analyses with composite outcomes.
 
 `WhenDidThatHappen` is a package for preparing time-to-event data in a
 consistent and verifiable way. It takes your Date or Datetime data (either as
-one-row-per-subject or many-rows-per-subject) and calculates when an event(s)
-happened, or if the subject was censored. The calculated output is suitable for
-Kaplan-Meier models, Cox Proportional Hazards models, Competing Risks models,
-and others. It supports simple and composite outcomes, with optional blanking
-periods and minimum observation periods.
+one-row-per-subject or many-rows-per-subject) and calculates which event 
+happened first, or if the subject was censored. The calculated output is 
+suitable for Kaplan-Meier models, Cox Proportional Hazards models, Competing 
+Risks models, and others. It supports simple and composite outcomes, with 
+optional blanking periods and minimum observation periods.
 
 
 ## Installation
@@ -122,12 +124,13 @@ simple_outcome[some_people, ]
 
 1. The subject's identifier, so that you can join these results with the 
    rest of your data.
-2. `time_to_...`, which is the time to event.
+2. `time_to_...`, which is the time to outcome.
 3. `outcome_...`, which is the outcome that happened (here as a factor of 
    Censored or Ablation, with Censored always being the first level).
-4. `outcome_int_...`, which is the same outcome as an integer starting from 
-   0 (= Censored), which some analysis packages prefer.
-5. `obstime_...`, which is the total time that the subject was under observation.
+4. `outcome_int_...`, which is an integer version of `outcome_...` starting 
+   from 0 (= Censored), which some analysis packages prefer.
+5. `obstime_...`, which is the total time that the subject was under observation 
+   during the study.
 
 The column names are built from the `description`, and the columns also 
 receive human-readable labels:
@@ -148,7 +151,7 @@ survfit(Surv(timeto_my.analysis, outcome_my.analysis) ~ 1, data = simple_outcome
 
 ## Composite outcomes (e.g. `survival::survfit()`, `survival::coxph()`, `coxme::coxme()`)
 
-You can define a composite event by providing more than one date for an outcome:
+You can define a composite outcome by providing more than one date for it:
 
 ```{r include=FALSE}
 set.seed(567567)
@@ -220,7 +223,7 @@ comprisk_outcome[some_people, ]
 
 You can ask `when_did_that_happen()` to return the results in any unit of time 
 you like. It defaults to units of 1 day, but you can set it to arbitrary ones 
-like units of 2 week, or units of 3 months. Note that `lubridate` does not have 
+like units of 2 weeks, or units of 3 months. Note that `lubridate` does not have 
 a `months()` function, so use `lubridate::weeks()` instead.
 
 ```{r eval=FALSE, echo=TRUE}
@@ -251,7 +254,7 @@ weeks or so are currently believed to be clinically non-significant.
 This function implements blanking periods as something that ignores *events*,
 but does not ignore *censoring*; if your blanking period is 3 months, and a
 subject gets an event in 1 month and then dies at 2 months, the event will be
-ignored but the person will receive an outcome of Censored and a
+ignored and the person will receive an outcome of Censored and a
 time-to-event of 2 months.
 
 ```{r eval=FALSE, echo=TRUE}
@@ -268,7 +271,7 @@ when_did_that_happen(
   late_censors  = c("followup_date"),
   
   time_units    = lubridate::weeks(4),  # Give `timeto_...` in units of 1 month.
-  blanking      = lubridate::weeks(1)   # A 1week post-index blanking period.
+  blanking      = lubridate::weeks(1)   # A 1-week post-index blanking period.
 )
 ```
 
@@ -278,7 +281,7 @@ when_did_that_happen(
 You may require subjects to be in your study long enough to have had a chance to
 develop the failure type you're trying to investigate. You can do this by setting
 the `minimum_time` argument; anyone who has less than this amount of time in the
-study becomes `NA` for the analysis.
+study becomes `NA` for the analysis so that they drop out of models.
 
 This function calculates observation time as the length of time from the index
 date to the subject's earliest censor date, regardless of whether they had an 
@@ -308,7 +311,7 @@ when_did_that_happen(
 ## The `debug` argument
 
 Users may want to double-check what the package is doing, or investigate odd
-results in their dataset. Setting `debug = TRUE` makes the package output an
+results in the dataset. Setting `debug = TRUE` makes the package output an
 extra diagnostic table.
 
 ```{r}
