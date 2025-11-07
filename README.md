@@ -124,7 +124,7 @@ simple_outcome[some_people, ]
     the rest of your data.
 2.  `time_to_...`, which is the time to outcome.
 3.  `outcome_...`, which is the outcome that happened (here as a factor
-    of Censored or Heart Failure, with Censored always being the first
+    of Censored or Heart Surgery, with Censored always being the first
     level).
 4.  `outcome_int_...`, which is an integer version of `outcome_...`
     starting from 0 (= Censored), which some analysis packages prefer.
