@@ -53,12 +53,12 @@
 #'
 #' when_did_that_happen(
 #'   data          = example_events,
-#'   analysis      = "Ablation",
+#'   analysis      = "My analysis",
 #'
 #'   identifier    = "personid",
 #'   start_time    = "index_date",
 #'   event_times   = list(
-#'     "Ablation"  = c("ablation_date")
+#'     "Heart Surgery" = c("heartsurgery_date")
 #'   ),
 #'   early_censors = c("death_date", "end_of_study"),
 #'   late_censors  = c("followup_date"),
@@ -76,12 +76,12 @@
 #'
 #' when_did_that_happen(
 #'   data          = example_events,
-#'   analysis      = "Cardiac Intervention",
+#'   analysis      = "Any Surgery",
 #'
 #'   identifier    = "personid",
 #'   start_time    = "index_date",
 #'   event_times   = list(
-#'     "Cardiac Intervention" = c("ablation_date", "cied_date")
+#'     "Any Surgery" = c("heartsurgery_date", "lungsurgery_date")
 #'   ),
 #'   early_censors = c("death_date", "end_of_study"),
 #'   late_censors  = c("followup_date"),
@@ -101,13 +101,13 @@
 #'
 #' when_did_that_happen(
 #'   data          = example_events,
-#'   analysis      = "Cardiac Intervention cw Death",
+#'   analysis      = "Any Surgery cw Death",
 #'
 #'   identifier    = "personid",
 #'   start_time    = "index_date",
 #'   event_times   = list(
-#'     "Cardiac Intervention" = c("ablation_date", "cied_date"),
-#'     "Death"                = c("death_date")
+#'     "Any Surgery" = c("heartsurgery_date", "lungsurgery_date"),
+#'     "Death"       = c("death_date")
 #'   ),
 #'   early_censors = c("end_of_study"),
 #'   late_censors  = c("followup_date"),
@@ -575,7 +575,7 @@ when_did_that_happen <- function(data, analysis, identifier, start_time, event_t
 #   data       = example_events_multirow,
 #   identifier = "personid",
 #   outcome    = "Cardiac intervention",
-#   dates      = c("cied_date", "ablation_date"),
+#   dates      = c("lungsurgery_date", "heartsurgery_date"),
 #   FUN        = "max"
 # )
 #

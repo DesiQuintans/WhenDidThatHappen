@@ -86,8 +86,8 @@ head(example_events)
 
 ## Simple outcomes (e.g. `survival::survfit()`, `survival::coxph()`, `coxme::coxme()`)
 
-The most basic application is for a single event. Here, either a
-person received an ablation, or they reached the end of the study without one.
+The most basic application is for a single event. Here, either a person received 
+heart surgery, or they reached the end of the study without it.
 
 ```{r include=FALSE}
 set.seed(567567)
@@ -97,12 +97,12 @@ set.seed(567567)
 simple_outcome <- 
   when_did_that_happen(
     data          = example_events,    # Your input dataset
-    analysis      = "Ablation",        # Name of outcome. Used for names/labels.
+    analysis      = "My analysis",     # Name of outcome. Used for names/labels.
     
     identifier    = "personid",        # Column with subject's identifier
     start_time    = "index_date",      # Each subject's start date.
     event_times   = list(
-      "Ablation" = c("ablation_date")  # One outcome (Ablation) with one date.
+      "Heart Surgery" = c("heartsurgery_date")  # An outcome with one date.
     ),
     early_censors = c(  # Subjects are censored at their earliest date of...
       "death_date",     #  Death, or
@@ -136,6 +136,15 @@ receive human-readable labels:
 Map(function(x) { attr(x, which = "label") }, simple_outcome)
 ```
 
+The derived variables are ready to pass into survival models, like this Kaplan-Meier:
+
+```{r eval=FALSE, include=TRUE}
+library(survival)
+
+survfit(Surv(timeto_my.analysis, outcome_my.analysis) ~ 1, data = simple_outcome)
+```
+
+
 
 ## Composite outcomes (e.g. `survival::survfit()`, `survival::coxph()`, `coxme::coxme()`)
 
@@ -149,12 +158,12 @@ set.seed(567567)
 composite_outcome <- 
   when_did_that_happen(
     data          = example_events,
-    analysis      = "Cardiac Intervention",
+    analysis      = "My composite analysis",
     
     identifier    = "personid",
     start_time    = "index_date",
     event_times   = list(
-      "Cardiac Intervention" = c("ablation_date", "cied_date")
+      "Heart or Lung Surgery" = c("heartsurgery_date", "lungsurgery_date")
     ),
     early_censors = c(
       "death_date",
@@ -182,13 +191,13 @@ set.seed(567567)
 comprisk_outcome <- 
   when_did_that_happen(
     data          = example_events,
-    analysis      = "Cardiac Intervention cmp Death",
+    analysis      = "My comprisk",
     
     identifier    = "personid",
     start_time    = "index_date",
     event_times   = list(
-      "Cardiac Intervention" = c("ablation_date", "cied_date"),
-      "Death"                = c("death_date")
+      "Surgery" = c("heartsurgery_date", "lungsurgery_date"),
+      "Death"   = c("death_date")
     ),
     early_censors = c(
       "end_of_study"
@@ -217,12 +226,12 @@ a `months()` function, so use `lubridate::weeks()` instead.
 ```{r eval=FALSE, echo=TRUE}
 when_did_that_happen(
   data          = example_events,
-  analysis      = "Ablation",
+  analysis      = "Heart Surgery",
   
   identifier    = "personid",
   start_time    = "index_date",
   event_times   = list(
-    "Ablation" = c("ablation_date")
+    "Heart Surgery" = c("heartsurgery_date")
   ),
   early_censors = c("death_date", "end_of_study"),
   late_censors  = c("followup_date"),
@@ -248,12 +257,12 @@ time-to-event of 2 months.
 ```{r eval=FALSE, echo=TRUE}
 when_did_that_happen(
   data          = example_events,
-  analysis      = "Ablation",
+  analysis      = "Heart Surgery",
   
   identifier    = "personid",
   start_time    = "index_date",
   event_times   = list(
-    "Ablation" = c("ablation_date")
+    "Heart Surgery" = c("heartsurgery_date")
   ),
   early_censors = c("death_date", "end_of_study"),
   late_censors  = c("followup_date"),
@@ -273,17 +282,18 @@ study becomes `NA` for the analysis.
 
 This function calculates observation time as the length of time from the index
 date to the subject's earliest censor date, regardless of whether they had an 
-outcome or not.
+event or not. In other words, it is how long the subject would have been 
+observed for, if they had not received any event.
 
 ```{r eval=FALSE, echo=TRUE}
 when_did_that_happen(
   data         = example_events,
-  analysis      = "Ablation",
+  analysis     = "Heart Surgery",
   
-  identifier    = "personid",
+  identifier   = "personid",
   start_time   = "index_date",
   event_times  = list(
-    "Ablation" = c("ablation_date")
+    "Heart Surgery" = c("heartsurgery_date")
   ),
   early_censors = c("death_date", "end_of_study"),
   late_censors  = c("followup_date"),
@@ -305,12 +315,12 @@ extra diagnostic table.
 debug_example <- 
   when_did_that_happen(
     data         = example_events,
-    analysis      = "Ablation",
+    analysis     = "Heart Surgery",
   
-    identifier    = "personid",
+    identifier   = "personid",
     start_time   = "index_date",
     event_times  = list(
-      "Ablation" = c("ablation_date")
+      "Heart Surgery" = c("heartsurgery_date")
     ),
     early_censors = c("death_date", "end_of_study"),
     late_censors  = c("followup_date"),
@@ -384,7 +394,7 @@ with the event. For a call like this, for example:
 when_did_that_happen(
   [...]
   event_times  = list(
-    "Cardiac Intervention" = c("ablation_date", "cied_date"),
+    "Cardiac Intervention" = c("heartsurgery_date", "lungsurgery_date"),
     "CVD Death"            = c("death_date_cvd")
   ),
   early_censors = c("death_date_noncvd", "end_of_study"),
@@ -396,6 +406,6 @@ when_did_that_happen(
 Then the sorting method is:
 
 1. Sort all dates chronologically, then
-2. Sub-sort by events (`ablation_date`, then `cied_date`, then `death_date_cvd`),
+2. Sub-sort by events (`heartsurgery_date`, then `lungsurgery_date`, then `death_date_cvd`),
 3. Then sub-sort by early censors (`death_date_noncvd`, `end_of_study`),
 4. Finally, sub-sort by late censors (`followup_date`).

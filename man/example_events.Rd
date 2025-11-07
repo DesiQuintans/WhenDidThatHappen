@@ -10,9 +10,10 @@
 A data frame with 40 rows and 8 columns:
 \describe{
 \item{personid}{Person identifier.}
+\item{studyarm}{Study arm.}
 \item{index_date}{Index date for each person.}
-\item{ablation_date}{Date of earliest ablation for each person. Missing if it did not happen.}
-\item{cied_date}{Date of earliest cardiac implanted electronic device implantation for each person. Missing if it did not happen.}
+\item{heartsurgery_date}{Date of earliest heart surgery for each person. Missing if it did not happen.}
+\item{lungsurgery_date}{Date of earliest lung surgery for each person. Missing if it did not happen.}
 \item{death_date}{Date of death for each person. Missing if they did not die.}
 \item{followup_date}{Last contact date for each person. Missing if they were only contacted at the beginning of the study.}
 \item{readmit_date}{Readmission date for each person. Missing if they were not readmitted.}

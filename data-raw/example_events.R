@@ -3,6 +3,48 @@
 example_events <-
   data.frame(
     personid = 1:40,
+    studyarm = c(
+      "Intervention",
+      "Intervention",
+      "Intervention",
+      "Control",
+      "Intervention",
+      "Intervention",
+      "Control",
+      "Control",
+      "Control",
+      "Control",
+      "Intervention",
+      "Control",
+      "Control",
+      "Control",
+      "Control",
+      "Control",
+      "Intervention",
+      "Intervention",
+      "Control",
+      "Control",
+      "Control",
+      "Intervention",
+      "Intervention",
+      "Intervention",
+      "Intervention",
+      "Control",
+      "Control",
+      "Intervention",
+      "Intervention",
+      "Intervention",
+      "Intervention",
+      "Control",
+      "Control",
+      "Control",
+      "Control",
+      "Intervention",
+      "Intervention",
+      "Intervention",
+      "Intervention",
+      "Control"
+    ),
     index_date = lubridate::ymd(
       "2025-09-03",
       "2025-04-19",
@@ -54,10 +96,10 @@ example_events <-
   example_events |>
   # Randomly add some time to the index. For some of these, allow no time to elapse.
   tidytable::mutate(
-    ablation_date =
+    heartsurgery_date =
       index_date + lubridate::days(sample(x = 0:30, size = length(index_date), replace = TRUE)),
 
-    cied_date =
+    lungsurgery_date =
       index_date + lubridate::days(sample(x = 0:90, size = length(index_date), replace = TRUE)),
 
     death_date =
@@ -74,7 +116,7 @@ example_events <-
   # Randomly replace some of these dates with NA.
   tidytable::mutate(
     tidytable::across(
-      c(ablation_date, cied_date, readmit_date),
+      c(heartsurgery_date, lungsurgery_date, readmit_date),
 
       function(x) {
         na_at <- sample.int(length(x), size = ceiling(0.5 * length(x)))
@@ -112,7 +154,7 @@ example_events <-
   # Clean the dates to remove impossible pairs, e.g. things happening after death.
   tidytable::mutate(
     tidytable::across(
-      c(ablation_date, cied_date, followup_date, readmit_date),
+      c(heartsurgery_date, lungsurgery_date, followup_date, readmit_date),
 
       function(x) {
         tidytable::case_when(
