@@ -1,8 +1,15 @@
 Package: WhenDidThatHappen
 Title: Calculate Outcome and Time-To-Event Inputs For Survival Analyses
-Version: 0.0.0.9009
-Authors@R: 
-    person("Desi", "Quintans", , "science@desiquintans.com", role = c("aut", "cre"))
+Version: 0.0.0.9010
+Authors@R: c(
+    person(given   = "Desi",
+           family  = "Quintans",
+           email   = "science@desiquintans.com",
+           role    = c("cre", "aut", "cph"),
+           comment = c(ORCID = "0000-0003-3356-0293")),
+    person(given   = "Westmead Applied Research Centre",
+           role    = c("cph", "fnd"))
+           )
 Description: 'WhenDidThatHappen' prepares survival analyses. It takes your raw 
     Datetimes (either as one- or many-rows-per-subject) and derives time-to-event 
     variables for use with common packages such as 'survival', 'coxme', and 

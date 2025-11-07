@@ -17,7 +17,12 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: Desi Quintans \email{science@desiquintans.com}
+\strong{Maintainer}: Desi Quintans \email{science@desiquintans.com} (\href{https://orcid.org/0000-0003-3356-0293}{ORCID}) [copyright holder]
+
+Other contributors:
+\itemize{
+  \item Westmead Applied Research Centre [copyright holder, funder]
+}
 
 }
 \keyword{internal}
