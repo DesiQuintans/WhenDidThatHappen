@@ -118,7 +118,8 @@ simple_outcome[some_people, ]
 #> 40       40                334            Censored                       0                 334
 ```
 
-`when_did_that_happen()` produces a dataframe with these columns:
+`when_did_that_happen()` produces a dataframe with one row per person, and several derived variables. The most
+important variables are:
 
 1.  The subject’s identifier, so that you can join these results with
     the rest of your data.
@@ -126,10 +127,23 @@ simple_outcome[some_people, ]
 3.  `outcome_...`, which is the outcome that happened (here as a factor
     of Censored or Heart Surgery, with Censored always being the first
     level).
-4.  `outcome_int_...`, which is an integer version of `outcome_...`
+
+The derived variables are ready to pass into survival models, like this
+Kaplan-Meier:
+
+``` r
+library(survival)
+
+survfit(Surv(timeto_my.analysis, outcome_my.analysis) ~ 1, data = simple_outcome)
+```
+
+The other columns in the dataframe are supplemental information. These are:
+    
+5.  `outcome_int_...`, which is an integer version of `outcome_...`
     starting from 0 (= Censored), which some analysis packages prefer.
-5.  `obstime_...`, which is the total time that the subject was under
-    observation during the study.
+6.  `obstime_...`, which is the time until Censor for each subject, regardless of
+    whether they had an event or not. This is also called "potential follow-up 
+    time", and represents how long the subject was under observation.
 
 The column names are built from the `description`, and the columns also
 receive human-readable labels:
@@ -152,14 +166,7 @@ Map(function(x) { attr(x, which = "label") }, simple_outcome)
 #> [1] "Total observation time for My analysis outcome"
 ```
 
-The derived variables are ready to pass into survival models, like this
-Kaplan-Meier:
 
-``` r
-library(survival)
-
-survfit(Surv(timeto_my.analysis, outcome_my.analysis) ~ 1, data = simple_outcome)
-```
 
 ## Composite outcomes (e.g. `survival::survfit()`, `survival::coxph()`, `coxme::coxme()`)
 
