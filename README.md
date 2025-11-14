@@ -118,8 +118,8 @@ simple_outcome[some_people, ]
 #> 40       40                334            Censored                       0                 334
 ```
 
-`when_did_that_happen()` produces a dataframe with one row per person,
-and several derived variables. The most important variables are:
+`when_did_that_happen()` produces a dataframe with one row per person, and several derived variables. The most
+important variables are:
 
 1.  The subject’s identifier, so that you can join these results with
     the rest of your data.
@@ -168,14 +168,7 @@ Map(function(x) { attr(x, which = "label") }, simple_outcome)
 #> [1] "Total observation time for My analysis outcome"
 ```
 
-The derived variables are ready to pass into survival models, like this
-Kaplan-Meier:
 
-``` r
-library(survival)
-
-survfit(Surv(timeto_my.analysis, outcome_my.analysis) ~ 1, data = simple_outcome)
-```
 
 ## Composite outcomes (e.g. `survival::survfit()`, `survival::coxph()`, `coxme::coxme()`)
 
