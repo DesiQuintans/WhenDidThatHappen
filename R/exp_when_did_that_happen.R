@@ -353,10 +353,10 @@ when_did_that_happen <- function(data, analysis, identifier, start_time, event_t
     setdiff(unique(data[[identifier]]), .ids_with_index)
 
   if (length(.ids_without_index) > 0) {
-    stop(
+    warning(
       "These `", identifier, "` have no valid start dates from ", paste(paste0('"', start_time, '"'), collapse = " or "), ":\n\n",
       "  ", paste(.ids_without_index, collapse = ", "), "\n\n",
-      "All subjects must have a start date."
+      "They will be NA for the derived variables."
     )
   }
 
@@ -477,9 +477,14 @@ when_did_that_happen <- function(data, analysis, identifier, start_time, event_t
 
   # 8. Calculate final times-to-events results ----------------------------
 
+  ## Keep rows with an index date -------------------------------
+
+  times_to_events <- all_dates[!is.na(all_dates[[start_time]]), ]
+
+
   ## Keep rows with unblanked dates -----------------------------
 
-  times_to_events <- all_dates[all_dates[[".blanked"]] == FALSE, ]
+  times_to_events <- times_to_events[times_to_events[[".blanked"]] == FALSE, ]
 
 
   ## Keep rows with enough follow-up ----------------------------
