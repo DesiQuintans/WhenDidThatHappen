@@ -274,13 +274,24 @@ when_did_that_happen <- function(data, analysis, identifier, start_time, event_t
           #    the original name of the date column (i.e. the source of the date
           #    information, .evtcol), and the outcome that this date belongs to
           #    (.outcome).
-          # 3. Remove rows with missing dates and duplicated identifier * dates,
+          # 3. Convert the date to a lubridate datetime for consistency.
+          # 4. Remove rows with missing dates and duplicated identifier * dates,
           #    and return the result.
           result <- data[, c(identifier, x)]
 
           names(result)[2] <- ".evtdate"
           result$.evtcol   <- x
           result$.outcome  <- y
+
+          if (lubridate::is.instant(result$.evtdate) == FALSE) {
+            stop(
+              "Column `", x, "` is not a date or datetime vector.\n",
+              "  Please convert it in your dataset, e.g. with `lubridate::ymd()`\n",
+              "  or `lubridate::ymd_hms()`."
+            )
+          }
+
+          result$.evtdate <- lubridate::as_datetime(result$.evtdate)
 
           result <- result[!is.na(result$.evtdate), ]
           result <- result[!duplicated(result), ]
@@ -324,21 +335,16 @@ when_did_that_happen <- function(data, analysis, identifier, start_time, event_t
   # 5. Get start dates and apply blanking rules, if any -------------------
 
   base_info <-
-    stats::aggregate(
-      x    = data[, c(start_time)],
-      by   = list(data[[identifier]]),
-      FUN  =
-        function(vec) {
-          if (all(is.na(vec))) {  # Faster + less mem_alloc than `length(vec[!is.na(vec)]) == 0`
-            return(lubridate::NA_Date_)
-          } else {
-            return(min(vec, na.rm = TRUE))
-          }
-        },
-      drop = FALSE
+    summarise_dates(
+      data       = data,
+      identifier = identifier,
+      outcome    = NULL,
+      dates      = start_time,
+      FUN        = "min"
     )
 
-  names(base_info) <- c(identifier, start_time)
+  base_info$.evtcol         <- NULL  # An unwanted column from summarise_dates()
+  names(base_info)          <- c(identifier, start_time)
   base_info[[".blankdate"]] <- base_info[[start_time]] + blanking
 
   rownames(base_info) <- NULL
@@ -476,6 +482,11 @@ when_did_that_happen <- function(data, analysis, identifier, start_time, event_t
 
 
   # 8. Calculate final times-to-events results ----------------------------
+
+  ## Keep rows with an index date -------------------------------
+
+  times_to_events <- all_dates[!is.na(all_dates[[start_time]]), ]
+
 
   ## Keep rows with unblanked dates -----------------------------
 
