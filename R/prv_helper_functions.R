@@ -18,7 +18,7 @@
 #   FUN        = "max"
 # )
 #
-summarise_dates <- function(data, identifier, outcome, dates, FUN = c("min", "max")) {
+summarise_dates <- function(data, identifier, outcome = NULL, dates, FUN = c("min", "max")) {
   FUN <- match.arg(FUN)
 
   if (is.null(dates) == FALSE & length(dates) > 0) {
@@ -34,8 +34,18 @@ summarise_dates <- function(data, identifier, outcome, dates, FUN = c("min", "ma
                 by = list(data[[identifier]]),
                 FUN =
                   function(vec) {
+                    if (lubridate::is.instant(vec) == FALSE) {
+                      stop(
+                        "Column `", x, "` is not a date or datetime vector.\n",
+                        "  Please convert it in your dataset, e.g. with `lubridate::ymd()`\n",
+                        "  or `lubridate::ymd_hms()`."
+                      )
+                    }
+
+                    vec <- lubridate::as_datetime(vec)
+
                     if (all(is.na(vec))) {  # Faster + less mem_alloc than `length(vec[!is.na(vec)]) == 0`
-                      return(lubridate::NA_Date_)
+                      return(lubridate::as_datetime(NA))
                     } else {
                       return(eval(call(FUN, vec, na.rm = TRUE)))
                     }
@@ -45,7 +55,10 @@ summarise_dates <- function(data, identifier, outcome, dates, FUN = c("min", "ma
 
             names(result) <- c(identifier, ".evtdate")
             result[[".evtcol"]]  <- x
-            result[[".outcome"]] <- outcome
+
+            if (is.null(outcome) == FALSE) {
+              result[[".outcome"]] <- outcome
+            }
 
             result <- result[is.na(result[[".evtdate"]]) == FALSE, ]
 
