@@ -18,16 +18,16 @@
 #'   known events (i.e. `date_of_earliest_heart_attack`).
 #'   - See the included dataset `example_events` for an example of this.
 #' - In many-rows-per-person, the variables can contain the date of every known
-#'   event (i.e. `date_of_heart_attack`). See
+#'   event (i.e. `date_of_heart_attack`).
 #'   - See the included dataset `example_events_multirow` for an example.
 #'
 #' @param data (Dataframe) The input data.
 #' @param analysis (Character) A human-readable name for your analysis, which is used give labels to the output variables. A suffix for the final variable names will be generated from this.
 #' @param identifier (Character) The name of one column in `data` that identifies subjects (e.g. patient number or machine serial number).
 #' @param start_time (Character) The name of one Date/Datetime column in `data` that provides the start date of observation for each subject.
-#' @param event_times (List with named Characters) Within this List, the names are human-readable labels for the event, and the contents are the names of Date/Datetime columns in `data` that are considered for that event. See 'Examples'.
-#' @param early_censors (Character) The names of one or more Date/Datetime columns in `data` that are used to censor a subject as soon as they occur because no more information can be collected about them, such as death or study withdrawal. At least one censor date must be given in either this argument or in `late_censors`. If this argument is not needed, leave it as `NULL`.
-#' @param late_censors (Character) The names of one or more Date/Datetime columns in `data` that are used to censor a subject when they stop occurring, such as censoring someone at their last known date of clinical contact. At least one censor date must be given in either this argument or in `early_censors`. If this argument is not needed, leave it as `NULL`.
+#' @param event_times (List with named Characters) Within this List, the names are human-readable labels for each event, and the contents are the names of Date/Datetime columns in `data` that are considered for that event. See 'Examples'.
+#' @param early_censors (Character) The names of one or more Date/Datetime columns in `data` that are used to censor a subject **as soon as they occur** because no more information can be collected about them, such as death or study withdrawal. At least one censor date must be given in either this argument or in `late_censors`. If this argument is not needed, leave it as `NULL`.
+#' @param late_censors (Character) The names of one or more Date/Datetime columns in `data` that are used to censor a subject when they **stop occurring**, such as censoring someone at their last known date of clinical contact. At least one censor date must be given in either this argument or in `early_censors`. If this argument is not needed, leave it as `NULL`.
 #' @param time_units (Period) A `lubridate` Period object that describes the units of time for each time-to-event. By default, times are reported in elapsed decimal days. You may be interested in [lubridate::hours()], [lubridate::days()], [lubridate::weeks()], or [lubridate::years()]. Note that there is no function for months because the number of days in a month varies; use weeks instead.
 #' @param blanking (Period) A `lubridate` Period object (like the `time_units` argument) that describes how long to wait *after* the `start_time` before observing events.
 #' @param minimum_time (Period) A `lubridate` Period object that describes the minimum follow-up time required for a subject to be eligible for this analysis (they will be `NA` if ineligible).
@@ -204,7 +204,7 @@ when_did_that_happen <- function(data, analysis, identifier, start_time, event_t
 
 
 
-  # 1. Set up internal functions and variables ------------------------------
+  # 1. Set up internal variables --------------------------------------------
 
   # Column names for the results columns.
   varname <- tolower(gsub("\\.{2,}", ".", make.names(analysis)))
@@ -476,11 +476,6 @@ when_did_that_happen <- function(data, analysis, identifier, start_time, event_t
 
 
   # 8. Calculate final times-to-events results ----------------------------
-
-  ## Keep rows with an index date -------------------------------
-
-  times_to_events <- all_dates[!is.na(all_dates[[start_time]]), ]
-
 
   ## Keep rows with unblanked dates -----------------------------
 
